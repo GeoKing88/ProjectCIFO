@@ -12,6 +12,7 @@ import utils as uls
 from problems.ANNOP import ANNOP
 from ANN.ANN import ANN, softmax, sigmoid
 from algorithms.genetic_algorithm import GeneticAlgorithm
+from algorithms.genetic_algorithm2 import GeneticAlgorithm2
 from algorithms.simulated_annealing import SimulatedAnnealing
 
 
@@ -41,9 +42,9 @@ validation_threshold = .07
 
 # Genetic Algorithm setup
 ps = 50
-p_c = .8
+p_c = 0.9
 radius = .2
-pressure = .2
+pressure = 0.2
 
 # Simulated Annealing setup
 ns = ps
@@ -81,12 +82,12 @@ for seed in range(n_runs):
     # - use at least 5 runs for your benchmarks
     # * including reproduction
     #++++++++++++++++++++++++++
-    ga1 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
+    ga1 = GeneticAlgorithm2(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
                           uls.one_point_crossover, p_c, uls.parametrized_ball_mutation(radius), 0.2)
     ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                           uls.one_point_crossover, p_c, uls.parametrized_ball_mutation(radius), 0.4)
+                           uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), 0.1)
     sa1 = SimulatedAnnealing(ann_op_i, random_state, ps, uls.parametrized_ball_mutation(radius), control, update_rate)
-    search_algorithms = [ga1, ga2, sa1]
+    search_algorithms = [ga1, ga2]
 
     # initialize search algorithms
     [algorithm.initialize() for algorithm in search_algorithms]

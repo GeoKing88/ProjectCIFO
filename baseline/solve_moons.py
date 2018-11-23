@@ -5,7 +5,7 @@ from sklearn import datasets
 import utils as uls
 from problems.ANNOP import ANNOP
 from ANN.ANN import ANN, sigmoid, tanh
-from algorithms.genetic_algorithm import GeneticAlgorithm
+from algorithms.genetic_algorithm2 import GeneticAlgorithm2
 
 
 # setup random state
@@ -46,13 +46,13 @@ ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=uls.parametri
 #++++++++++++++++++++++++++
 # THE OPTIMIZATION
 #++++++++++++++++++++++++++
-n_gen = 50
-ps = 100
-p_c = 0.5
-p_m = 0.9
+n_gen = 100
+ps = 50
+p_c = 0.6
+p_m = 0.5
 radius = 0.2
-ga = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(0.1),
-                      uls.one_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_c)
+ga = GeneticAlgorithm2(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(0.1),
+                      uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_c)
 ga.initialize()
 ga.search(n_gen, True)
 

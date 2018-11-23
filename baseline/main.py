@@ -13,7 +13,9 @@ import utils as uls
 from problems.ANNOP import ANNOP
 from ANN.ANN import ANN, softmax, sigmoid
 from algorithms.genetic_algorithm import GeneticAlgorithm
-from algorithms.simulated_annealing import SimulatedAnnealing
+from algorithms.genetic_algorithm2 import GeneticAlgorithm2
+from hill_climbing import HillClimbing
+from simulated_annealing import SimulatedAnnealing
 
 
 # setup logger
@@ -74,12 +76,17 @@ validation_p = 0.2
 ann_i = ANN(hidden_architecture, softmax, accuracy_score,
                    (X_train, y_train), random_state, validation_p, digits.target_names)
 
+
+
+
 #++++++++++++++++++++++++++
 # THE PROBLEM INSTANCE
 #++++++++++++++++++++++++++
 validation_threshold = 0.07
 ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=ann_i.stimulate,
                  minimization=False, validation_threshold=validation_threshold)
+ann_op_i.fitness_function
+
 
 #++++++++++++++++++++++++++
 # THE OPTIMIZATION
@@ -88,28 +95,27 @@ ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=ann_i.stimula
 # - 50 f.e./generation
 # - use at least 5 runs for benchmarks
 #++++++++++++++++++++++++++
-n_gen = 10
-ps = 20
+n_gen = 100
+ps = 50
 p_c = .5
 p_m = .9
 radius = .2
 pressure = .2
-ga = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                      uls.one_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
+ga = GeneticAlgorithm2(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
+                          uls.uniform_points_crossover, p_c, uls.parametrize_uniform_mutation(radius), p_m)
+
+'''
+ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure=pressure),
+                       uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
+'''
+
 ga.initialize()
-ga.search(n_gen, False, True)
+ga.search(n_gen, True, True)
 
 ga.best_solution.print_()
 print("Training fitness of the best solution: %.2f" % ga.best_solution.fitness)
 print("Validation fitness of the best solution: %.2f" % ga.best_solution.validation_fitness)
 
-sa = SimulatedAnnealing(ann_op_i, random_state, ps, uls.parametrized_ball_mutation(radius), 2, .9)
-sa.initialize()
-sa.search(n_gen, True, True)
-
-sa.best_solution.print_()
-print("Training fitness of the best solution: %.2f" % sa.best_solution.fitness)
-print("Validation fitness of the best solution: %.2f" % sa.best_solution.validation_fitness)
 
 #++++++++++++++++++++++++++
 # TEST
@@ -131,7 +137,7 @@ if make_plots:
     f.suptitle('Testing classifier on unseen data')
     plt.show()
 
-ann_i._set_weights(sa.best_solution.representation)
+ann_i._set_weights(ga.best_solution.representation)
 y_pred = ann_i.stimulate_with(X_test, False)
 print("Unseen Accuracy of the best solution: %.2f" % accuracy_score(y_test, y_pred))
 if make_plots:

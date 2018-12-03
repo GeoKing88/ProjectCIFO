@@ -5,6 +5,7 @@ class Solution:
         self._solution_id = Solution._id
         Solution._id += 1
         self.representation = representation
+        self.id = self._id
 
     def print_(self, inline=True, show_list=False):
         if show_list:
@@ -12,5 +13,5 @@ class Solution:
                 print(*self.representation, sep=" | ")
             else:
                 print(*self.representation, sep="\n")
-        print("Solution ID: %d\nDimensionality: %d\nFitness: %.2f\nIs admissible?\tR: %s" %
-              (self._solution_id, self.dimensionality, self.fitness, self.valid))
+        print("Solution ID: %d\nFitness: %.2f\nIs admissible?\tR: %s" %
+              (self._solution_id, self.fitness, self.valid))

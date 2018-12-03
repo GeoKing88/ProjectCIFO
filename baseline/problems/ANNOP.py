@@ -1,6 +1,7 @@
 import numpy as np
 from continuous import Continuous
 from solutions.solution import Solution
+import openpyxl
 
 
 class ANNOP(Continuous):
@@ -26,5 +27,6 @@ class ANNOP(Continuous):
             return len(solution.representation), True
 
     def sample_search_space(self, random_state):
-        return Solution(random_state.uniform(low=self.search_space[0], high=self.search_space[1],
-                                             size=self.search_space[2]))
+        solution = Solution(random_state.uniform(low=self.search_space[0], high=self.search_space[1],
+                                                 size=self.search_space[2]))
+        return solution

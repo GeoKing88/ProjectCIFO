@@ -6,6 +6,7 @@ import utils as uls
 from problems.ANNOP import ANNOP
 from ANN.ANN import ANN, sigmoid, tanh
 from algorithms.genetic_algorithm2 import GeneticAlgorithm2
+from algorithms.genetic_algorithm3 import GeneticAlgorithm3
 
 
 # setup random state
@@ -48,13 +49,14 @@ ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=uls.parametri
 #++++++++++++++++++++++++++
 n_gen = 100
 ps = 50
-p_c = 0.6
-p_m = 0.5
+p_c = 0.8
+p_m = 0.3
 radius = 0.2
-ga = GeneticAlgorithm2(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(0.1),
+ga = GeneticAlgorithm3(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(0.1),
                       uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_c)
 ga.initialize()
-ga.search(n_gen, True)
+for iteration in range(n_gen):
+    ga.search(n_gen, False, True)
 
 ga.best_solution.print_()
 print("Training fitness of the best solution: %.2f" % ga.best_solution.fitness)

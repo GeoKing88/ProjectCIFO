@@ -4,6 +4,7 @@ import random
 from random import randint
 import pandas as pd
 import math
+import copy
 
 def get_random_state(seed):
     return np.random.RandomState(seed)
@@ -90,7 +91,7 @@ def two_point_crossover(p1_r, p2_r, random_state):
     off2_r = np.concatenate((p2_r[0:point1], p1_r[point1:point2], p2_r[point2: len_]))
     return off1_r, off2_r
 
-#dont remmenber
+#dont remmember
 def mix_one_and_two_point(p1_r, p2_r, random_state):
     len_ = len(p1_r)
     point1 = random_state.randint(len_)
@@ -171,20 +172,12 @@ def aritmetic_recombination(p1_r, p2_r, random_state):
 def geometric_semantic_crossover(p1_r, p2_r, random_state):
     len_ = len(p1_r)
     off1_r = p1_r
+    off2_r = p2_r
     for iteration in range(len_):
-        random = random_state.uniform(0,1)
+        random = random_state.uniform(0, 1)
         off1_r[iteration] = random*p1_r[iteration] + (1-random)*p2_r[iteration]
-    return off1_r
-
-#Not use. Is from the Leonardo code.
-def geometric_semantic_crossover_sigmoid(p1_r, p2_r, random_state):
-    len_ = len(p1_r)
-    off1_r = p1_r
-    for iteration in range(len_):
-        random = random_state.uniform(0,1)
-        sigmoid = 1/(1+math.exp(-(random)))
-        off1_r[iteration] = sigmoid*p1_r[iteration] + (1-sigmoid)*p2_r[iteration]
-    return off1_r
+        off2_r[iteration] = (1-random)*p1_r[iteration] + random*p2_r[iteration]
+    return off1_r, off2_r
 
 #Very disruptive
 def uniform_points_crossover(p1_r, p2_r, random_state):
@@ -210,87 +203,57 @@ def parametrized_ann(ann_i):
     return ann_i.stimulate(weights)
   return ann_ff
 
+#Same.
+def parametrize_roulette_wheel_w_pressure(pressure=0):
+    def roulette_wheel(population, minimization, random_state, pressure=0):
+        total = determine_the_total_fitness_seletion_phase(population)
+        selection_population = copy.deepcopy(population.tolist())
+        individual1 = determine_the_parent(selection_population, total)
+        individual2 = determine_the_parent(selection_population, total)
+        return individual1, individual2
+    return roulette_wheel
+
+
+
+def parametrize_roulette_wheel_pressure(pressure=0):
+    def roulette_wheel(population, random_state, pressure=0):
+        total = determine_the_total_fitness_seletion_phase(population)
+        selection_population = copy.deepcopy(population.tolist())
+        individual1 = determine_the_parent_pressure(selection_population,total, pressure, random_state)
+        individual2 = determine_the_parent_pressure(selection_population, total, pressure, random_state)
+        return individual1, individual2
+    return roulette_wheel
+
+
 #Need to confirm this. Somethimes the sames individuals are selected and is annoying.
 def parametrized_tournament_selection(pressure2):
-    def tournament_selection(population, minimization, random_state, pressure):
+    def tournament_selection(population, random_state, pressure):
         tournament_pool_size = int(len(population)*pressure)
         tournament_pool = random_state.choice(population, size=tournament_pool_size, replace=False)
-        if minimization:
-            return reduce(lambda x, y: x if x.fitness <= y.fitness else y, tournament_pool)
-        else:
-            return reduce(lambda x, y: x if x.fitness >= y.fitness else y, tournament_pool)
+        i = 2
+        individual1 = tournament_pool[0]
+        individual2 = tournament_pool[1]
+        while i<tournament_pool_size:
+            if tournament_pool[i].fitness > individual1.fitness:
+                individual1 = tournament_pool[i]
+            else:
+                if tournament_pool[i].fitness>individual2.fitness:
+                    individual2 = tournament_pool[i]
+            i=i+1
+        return individual1, individual2
     return tournament_selection
 
 
-#Same.
-def parametrize_roulette_wheel(pressure):
-    def roulette_wheel(population, minimization, random_state, pressure):
-        solution1 = None
-        sum = 0
-
-        selectTheBestPopulation1 = pd.DataFrame(
-            np.asanyarray([[individual, individual.fitness] for individual
-                           in population]))
-        selectTheBestPopulation1.rename(index=str, columns={0: "Individual", 1: "Fitness"}, inplace=True)
-        selectTheBestPopulation1.sort_values(ascending=False, inplace=True, by="Fitness")
-        selectTheBestPopulationList1 = selectTheBestPopulation1['Individual'].tolist()
-
-        i = 0
-
-        while i < len(selectTheBestPopulationList1):
-            if i < len(selectTheBestPopulationList1)/2:
-                sum = sum + selectTheBestPopulationList1[i].fitness
-            else:
-                sum = sum + (selectTheBestPopulationList1[i].fitness*pressure)
-            i = i + 1
-        individual_fitness = 0
-        i = 0
-        while i < len(selectTheBestPopulationList1):
-            if i < len(selectTheBestPopulationList1):
-                individual_fitness = individual_fitness+selectTheBestPopulationList1[i].fitness
-            else:
-                individual_fitness = individual_fitness + (selectTheBestPopulationList1[i].fitness*pressure)
-            if individual_fitness/sum >= random_state.uniform(0, 1):
-                solution1 = selectTheBestPopulationList1[i]
-                break
-        return solution1
-    return roulette_wheel
-
-#Same 2
-def parametrize_roulette_wheel2(pressure):
-    def roulette_wheel2(population, minimization, random_state, pressure):
-        solution1 = None
-        sum = 0
-        selectTheBestPopulation1 = pd.DataFrame(
-            np.asanyarray([[individual, individual.fitness] for individual
-                           in population]))
-        selectTheBestPopulation1.rename(index=str, columns={0: "Individual", 1: "Fitness"}, inplace=True)
-        selectTheBestPopulation1.sort_values(ascending=False, inplace=True, by="Fitness")
-        selectTheBestPopulationList1 = selectTheBestPopulation1['Individual'].tolist()
-        i = 0
-        while i < len(selectTheBestPopulationList1):
-            sum = sum + selectTheBestPopulationList1[i].fitness
-            i = i + 1
-        individual_fitness = 0
-        i = 0
-        while i < len(selectTheBestPopulationList1):
-            individual_fitness = individual_fitness+selectTheBestPopulationList1[i].fitness
-            if individual_fitness/sum >= random_state.uniform(0, 1):
-                solution1 = selectTheBestPopulationList1[i]
-                break
-        return solution1
-    return roulette_wheel2
-
-
 #Need to Implement
-def parametrize_rank_selection (pressure):
-    def rank_selection(population, minimization, random_state, pressure):
-
-        len_ = len(population)
-
-
-
-
+def parametrize_rank_selection (pressure=0):
+    def rank_selection(population, random_state, pressure=0):
+        rank_population = order_numpy_solutions_array(population)
+        population_probabilities = calculate_probabilities_for_rank(len(population))
+        individual1 = determine_the_selection_offspring(rank_population, population_probabilities)
+        rank_population = order_numpy_solutions_array(rank_population)
+        population_probabilities = calculate_probabilities_for_rank(len(rank_population))
+        individual2 = determine_the_selection_offspring(rank_population, population_probabilities)
+        return individual1, individual2
     return rank_selection
 
 
@@ -317,6 +280,7 @@ def calculate_min_solution(population):
 
 def calculate_media_solution(population):
     return calculate_sum_solution(population)/len(population)
+
 
 #Bad
 def parametrize_uniform_mutation(radius):
@@ -377,7 +341,7 @@ def inversed_order_numpy_solutions_array(population):
 
 #Not quite good, but I think the idea need to be develop
 def parametrize_botzmann_selection(iteration):
-    def botzmann_selection(population, minimization, random_state, pressure):
+    def botzmann_selection(population, random_state, pressure):
         solution1 = None
         sum = 0
         selectTheBestPopulation1 = pd.DataFrame(
@@ -404,8 +368,124 @@ def parametrize_botzmann_selection(iteration):
         return solution1
     return botzmann_selection
 
+def calculate_probabilities_for_rank(length):
+    population_probabilities = []
+    gauss_formula = (length + 1) * (length / 2)
+    for i in range(length):
+        population_probabilities.append(i / gauss_formula)
+    return population_probabilities
+
+def determine_the_selection_offspring(population, population_probabilities):
+    sum = 0
+    for j in range(len(population_probabilities)):
+        if random.random() < population_probabilities[j] + sum:
+            individual = population[j]
+            del population[j]
+            return individual
+        sum = sum + population_probabilities[j]
+    return population[:-1]
+
+def determine_the_total_fitness_seletion_phase(population):
+    sum = 0
+    for i in range(len(population)):
+        sum = sum + population[i].fitness
+    return sum
+
+def determine_the_total_fitness_seletion_phase_pressure(population, pressure):
+    sum = 0
+    for i in range(len(population)):
+        sum = (sum + population[i].fitness)*pressure
+    return sum
+
+def determine_the_parent(probability_individuals_population, total):
+    sum = 0
+    i = 0
+    while i < len(probability_individuals_population):
+        if random.random() < (probability_individuals_population[i].fitness+sum)/total:
+            individual = probability_individuals_population[i]
+            del probability_individuals_population[i]
+            return individual
+        sum = sum + probability_individuals_population[i].fitness
+        i=i+1
+    return probability_individuals_population[:-1]
+
+def determine_the_parent_pressure(probability_individuals_population, total, pressure, random_state):
+    sum = 0
+    i = 0
+    while i < len(probability_individuals_population):
+        if random_state.uniform() < (probability_individuals_population[i].fitness*pressure+sum)/total:
+            individual = probability_individuals_population[i]
+            del probability_individuals_population[i]
+            return individual
+        sum = sum + probability_individuals_population[i].fitness*pressure
+        i=i+1
+
+def calculate_feature_scaling(min, max, solution_position):
+    return ((solution_position - min)/(max-min))
 
 
+def parametrize_roulette_wheel_Wpressure_sharing_fitness(pressure):
+    def roulette_wheel (population, random_state, pressure):
+        candidates, total_fitness = population
+        candidates['Fitness_Sharing'] = pd.to_numeric(candidates['Fitness_Sharing'])
+        candidates['probability'] = candidates['Fitness_Sharing']
+        candidates_tolist = candidates['Fitness_Sharing'].tolist()
+        sum = 0
+        probability_list = []
+        for i in range(len(candidates_tolist)):
+            probability_list.append(sum)
+            sum = sum + candidates_tolist[i]
+        candidates['probability'] = probability_list
+        selection_population = candidates.copy(deep=True)
+        individuals = []
+        i = 0
+        while i < 2:
+            random_number = random.random()
+            selection_population = selection_population.loc[candidates['probability'] < random_number]
+            selection_population.sort_values(by=['probability'], inplace=True, ascending=False)
+            individuals.append(selection_population.iloc[0]['Id'])
+            i = i+1
+
+        return individuals[0], individuals[1]
+    return roulette_wheel
 
 
+def normalize_distance(distance):
+    return (1 / (1 - math.exp(-distance))) * 2 - 1
 
+
+def distance_scheme(individual1, individual2):
+    distance_map = []
+    for i in range(len(individual1.representation)):
+        distance_map.append((individual1.representation[i] - individual2.representation[i])**2)
+    distance = 0
+    for i in range(len(distance_map)):
+        distance = distance + distance_map[i]
+    return distance
+
+
+def determine_the_total_fitness_seletion_phase_sharing_fitness(population, pressure):
+    candidates_list = []
+    fitness_list = []
+    total_fitness = 0
+    for i in range(len(population)):
+        fitness = population[i].fitness
+        share_distance = calculate_share_distance(population[i], population, pressure)
+        total_fitness = total_fitness + (fitness/share_distance)
+        candidates_list.append(population[i])
+        fitness_list.append(fitness/share_distance)
+    candidates = pd.DataFrame(candidates_list, columns=['Id'])
+    candidates['Fitness_Sharing'] = fitness_list
+
+
+    return candidates, total_fitness
+
+
+def calculate_share_distance(individual, population, pressure):
+    total_share_distance = 0
+    for i in range(len(population)):
+        if population[i].id != individual.id:
+            distance_normalize = normalize_distance(distance_scheme(individual, population[i]))
+            if distance_normalize < pressure:
+                total_share_distance = total_share_distance + (1-(distance_normalize/pressure)**pressure)
+    return total_share_distance

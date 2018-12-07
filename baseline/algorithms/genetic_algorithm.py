@@ -11,7 +11,6 @@ import math
 
 class GeneticAlgorithm(RandomSearch):
 
-
     def __init__(self, problem_instance, random_state, population_size,
                  selection, crossover, p_c, mutation, p_m, presure):
         RandomSearch.__init__(self, problem_instance, random_state)
@@ -23,51 +22,63 @@ class GeneticAlgorithm(RandomSearch):
         self.p_m = p_m
         self.presure = presure
         self.reproduttive_guys = []
+        self.repetition = 0
 
     def initialize(self):
         self.population = self._generate_random_valid_solutions()
         self.best_solution = self._get_elite(self.population)
 
     def search(self, n_iterations, report=False, log=False):
-        iteration =0
+
         if log:
             log_event = [self.problem_instance.__class__, id(self._random_state), __name__]
             logger = logging.getLogger(','.join(list(map(str, log_event))))
         elite = self.best_solution
         offsprings = []
         while len(offsprings) < len(self.population):
-            p1, p2 = [
-                self.selection(self.population, self.problem_instance.minimization, self._random_state, self.presure)
-                for _ in
-                range(2)]
-            print(self.distance_scheme(p1, p2))
-
-            off1 = copy.deepcopy(p1)
+            off1, off2 = p1, p2 = self.selection(self.population, self._random_state, self.presure)
             if self._random_state.uniform() < self.p_c:
-                off1 = self._crossover(p1, p2)
+                off1, off2 = self._crossover(p1, p2)
+
 
             if self._random_state.uniform() < self.p_m:
                 off1 = self._mutation(off1)
+                off2 = self._mutation(off2)
 
             if not (hasattr(off1, 'fitness')):
                 self.problem_instance.evaluate(off1)
-            offsprings.append(p1)
+                self.problem_instance.evaluate(off2)
+
+            '''
+            if p1.fitness > off1.fitness:
+                offsprings.append(p1)
+            else:
+                offsprings.append(off1)
+            if p2.fitness > off2.fitness:
+                offsprings.append(p2)
+            else:
+                offsprings.append(off2)
+            '''
+            offsprings.append(off1)
+            offsprings.append(off2)
+
         while len(offsprings) > len(self.population):
             offsprings.pop()
         elite_offspring = self._get_elite(offsprings)
-        if report:
-            self._verbose_reporter_inner(elite, iteration)
 
-        newPopulation = self.sort_popilations(self.population, offsprings)
+        newPopulation = self.sort_populations(offsprings)
         elite = self._get_best(elite, elite_offspring)
         self.best_solution = elite
-        self.population = newPopulation
+        self.population = np.asarray(newPopulation)
+
+
 
 
     def _crossover(self, p1, p2):
-        off1 = self.crossover(p1.representation, p2.representation, self._random_state)
+        off1, off2 = self.crossover(p1.representation, p2.representation, self._random_state)
         off1 = Solution(off1)
-        return off1
+        off2 = Solution(off2)
+        return off1, off2
 
     def _mutation(self, individual):
         mutant = self.mutation(individual.representation, self._random_state)
@@ -90,6 +101,7 @@ class GeneticAlgorithm(RandomSearch):
 
     def get_all_fitness(self):
         fitness_list = []
+
         for i in range(len(self.population)):
             fitness_list.append(self.population[i].fitness)
         return np.asarray(fitness_list)
@@ -123,10 +135,7 @@ class GeneticAlgorithm(RandomSearch):
             parent_fitness = p2.fitness
         else:
             parent_fitness = p1.fitness
-        #print("parent_fitness: ", parent_fitness)
         avg = uls.calculate_media_solution(self.population)
-        #print("avg: ", avg)
-        #print("best_solution: ", self.best_solution.fitness)
         if parent_fitness >= avg:
             best_fitness = self.best_solution.fitness
             return crossover_pressure*(best_fitness - parent_fitness)/(best_fitness - avg)
@@ -142,17 +151,16 @@ class GeneticAlgorithm(RandomSearch):
         return distance
 
 
-    def sort_popilations(self, population, offsprings):
+    def sort_populations(self, population):
         selectTheBestOffsprings = pd.DataFrame(np.asanyarray([[offspring, offspring.fitness] for offspring
-                                                              in offsprings]))
-        selectTheBestPopulation = pd.DataFrame(np.asanyarray([[individual, individual.fitness] for individual
-                                                       in population]))
+                                                              in population]))
         selectTheBestOffsprings.rename(index=str, columns={0: "Offspring", 1: "Fitness"}, inplace=True)
-        selectTheBestPopulation.rename(index=str, columns={0: "Individual", 1: "Fitness"}, inplace=True)
         selectTheBestOffsprings.sort_values(ascending=False, inplace=True, by="Fitness")
-        selectTheBestPopulation.sort_values(ascending=False, inplace=True, by="Fitness")
         selectTheBestOffspringsList = selectTheBestOffsprings['Offspring'].tolist()
-        selectTheBestPopulationList = selectTheBestPopulation['Individual'].tolist()
-        return selectTheBestOffspringsList, selectTheBestPopulationList
+        return selectTheBestOffspringsList
 
+    def commit_genocid(self, population):
+        martials = self._generate_random_valid_solutions().tolist()[:12]
+        population = self.sort_populations(self.population)
+        return np.asanyarray(martials[:13] + population[:13])
 

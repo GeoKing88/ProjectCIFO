@@ -57,7 +57,7 @@ if make_plots:
     plt.show()
 
 # setup random state
-seed =78
+seed =541
 random_state = uls.get_random_state(seed)
 
 # split data
@@ -99,16 +99,17 @@ ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=ann_i.stimula
 #++++++++++++++++++++++++++
 n_gen = 100
 ps = 50
-p_c = .4
-p_m = 0.9
+p_c = .9
+p_m = 0.7
 radius = .2
-pressure = .2
+pressure = .7
 p_migration = 0
-ga1 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_roulette_wheel(pressure),
-                          uls.geometric_semantic_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m, pressure)
+ga1 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_botzmann_selection(0.9),
+                          uls.geometric_semantic_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m, 0.9)
 
-ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_botzmann_selection(pressure),
-                          uls.geometric_semantic_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m, pressure)
+ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_roulette_wheel_pressure(0.9),
+                          uls.geometric_semantic_crossover, p_c=p_c, mutation=uls.parametrized_ball_mutation(radius),
+                                p_m = p_m, presure=0.6)
 
 ga3 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_botzmann_selection(0.2),
                           uls.geometric_semantic_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m, 0.2)
@@ -119,149 +120,41 @@ ga4 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_botzmann_sele
 ga5 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_botzmann_selection(0.2),
                           uls.geometric_semantic_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m, 0.2)
 
-'''
-ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure=pressure),
-                       uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
-'''
 islands =[]
 ga1.initialize()
-islands.append(ga1)
 #ga2.initialize()
+islands.append(ga1)
 #islands.append(ga2)
+
 best_solution = ga1.best_solution
-#print(set((np.around(best_solution.representation,2)).tolist()))
-#print(ga2.best_solution.fitness)
-'''
-for iteration in range(20):
-    print("AQUI")
-    ga1.search(40, False, False)
-    ga2.search(40, False, False)
 
-    for i in range(len(islands)):
-        if best_solution.fitness < islands[i].best_solution.fitness:
-            algorithm = islands[i]
-            best_solution = islands[i].best_solution
-
-    print(">>>>>>>>>>>>>>>>>INTERATION: ",iteration)
-    print(">>>>>>>>>>>>>>>>>BEST_SOLUTION: ",best_solution.id)
-    print("G11: ", ga1.best_solution1.fitness)
-    print("G12: ", ga1.best_solution2.fitness)
-    print("G21: ", ga2.best_solution1.fitness)
-    print("G22: ", ga2.best_solution2.fitness)
-    print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ",str(round(best_solution.fitness, 2)))
-best_solution.print_()
-
-gt = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_roulette_wheel(0.6),
-                          uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
-
-gt.population = ga1.population + ga2.population
-
-
-for iteration in range(100):
-
-    print("AQUI2")
-    gt.best_solution = best_solution
-    gt.search(20, True, False)
-    if gt.best_solution.fitness > best_solution.fitness:
-        best_solution = gt.best_solution
-    print(">>>>>>>>>>>>>>>>>INTERATION: ", iteration)
-    print(">>>>>>>>>>>>>>>>>BEST_SOLUTION: ", best_solution.id)
-    print("G1: ", gt.best_solution.fitness)
-    print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(round(best_solution.fitness, 2)))
-
-
-random_state.shuffle(gt.population)
-ga1.population1 = gt.population[:13]
-ga1.population2 = gt.population[14:25]
-ga2.population1 = gt.population[25:38]
-ga2.population2 = gt.population[38:50]
-'''
-constat = 2
-#wb = openpyxl.Workbook()
-#ws1 = wb.create_sheet("Mysheet")
-#ws2 = wb.create_sheet("2")
 save_solutions = []
-#save_solutions2 = []
 save_solutions.append(ga1.best_solution)
-#save_solutions2.append(ga2.best_solution)
 for iteration in range(n_gen):
     ga1.search(100, False, False)
     #ga2.search(100, False, False)
-    if iteration % 20 ==0 and iteration !=0:
-        '''print("TROCA")
-
-        ga1.population = uls.order_numpy_solutions_array(ga1.population)
-        ga2.population = uls.order_numpy_solutions_array(ga2.population)
-
-        solution1 = ga1.population[:3].copy()
-        solution2 = ga2.population[:3].copy()
-
-        ga1.population[:3] = solution2
-        ga2.population[:3] = solution1
-        '''
-        '''
-        ga1.population = uls.order_numpy_solutions_array(ga1.population)
-        ga2.population = uls.order_numpy_solutions_array(ga2.population)
-        ga3.population = uls.order_numpy_solutions_array(ga3.population)
-        ga4.population = uls.order_numpy_solutions_array(ga4.population)
-        ga5.population = uls.order_numpy_solutions_array(ga5.population)
-
-        solution1 = ga1.population[:4].copy()
-        solution2 = ga2.population[:4].copy()
-        solution2 = ga2.population[:4].copy()
-        solution2 = ga2.population[:4].copy()
-        solution2 = ga2.population[:4].copy()
-
-        ga1.population[:4] = solution2
-        ga2.population[:4] = solution1
-        '''
     for i in range(len(islands)):
         if best_solution.fitness < islands[i].best_solution.fitness:
             algorithm = islands[i]
             best_solution = islands[i].best_solution
 
-    print(">>>>>>>>>>>>>>>>>INTERATION: ",iteration)
-    print(">>>>>>>>>>>>>>>>>BEST_SOLUTION: ",best_solution.id)
-    print("\n")
-    print("G1: ", ga1.best_solution.fitness)
-    print("G1 MEAN: ", np.mean(ga1.get_all_fitness()))
-    #print("G1 STD: ", np.std(ga1.get_all_fitness()))
-    #print("\n")
-    #print("G2: ", ga2.best_solution.fitness)
 
-    #print("G2 MEAN: ", np.mean(ga2.get_all_fitness()))
-    #print("G2 STD: ", np.std(ga2.get_all_fitness()))
-    print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(round(best_solution.fitness, 2)))
-    #save_solutions.append(ga1.best_solution)
-    #save_solutions2.append(ga2.best_solution)
+
+    print("\n")
+    print(">>>>>>>>>>>>>>>>>G1 - INTERATION: ", iteration)
+    print(">>>>>>>>>>>>>>>>>G1 - BEST_SOLUTION: ", ga1.best_solution.id)
+    print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(ga1.best_solution.fitness))
+    print(">>>>>>>>>>>>>>>>>G1 - MEAN: ", uls.calculate_media_solution(ga1.population))
+
+    #print("\n")
+    #print(">>>>>>>>>>>>>>>>>G2 - INTERATION: ", iteration)
+    #print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(ga2.best_solution.fitness))
+    #print(">>>>>>>>>>>>>>>>xxszzzzs>BEST_SOLUTION: ", ga2.best_solution.id)
+    #print(">>>>>>>>>>>>>>>>>G2 - MEAN: ", uls.calculate_media_solution(ga2.population))
     row = 1
     column = 0
-    '''
-    for i in range(len(ga1.best_solution.representation)):
-        ws1[get_column_letter(iteration+1) + str(row)] = ga1.best_solution.representation[i]
-        ws2[get_column_letter(iteration+1) + str(row)] = ga2.best_solution.representation[i]
-        row += 1
-    ws1[get_column_letter(iteration+4) + str(row+1)] = ga1.best_solution.fitness
-    ws2[get_column_letter(iteration + 4) + str(row + 1)] = ga2.best_solution.fitness
-    
 
-wb.save('C:\\Users\\hppor\\Desktop\\Template.xlsx')
-'''
 best_solution.print_()
-'''
-gt.presure1 = 0.9
-#gt.population = ga1.population1 + ga2.population2
-for iteration in range(10):
-    print("AQUI4")
-    gt.best_solution = best_solution
-    gt.search(20, True, False)
-    if gt.best_solution.fitness > best_solution.fitness:
-        best_solution = gt.best_solution
-    print(">>>>>>>>>>>>>>>>>INTERATION: ",iteration)
-    print(">>>>>>>>>>>>>>>>>BEST_SOLUTION: ", best_solution.id)
-    print("G1: ", gt.best_solution.fitness)
-    print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(round(best_solution.fitness, 2)))
-'''
 print("Training fitness of the best solution: %.2f" % best_solution.fitness)
 print("Validation fitness of the best solution: %.2f" % best_solution.validation_fitness)
 

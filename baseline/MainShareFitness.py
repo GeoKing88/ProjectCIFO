@@ -82,51 +82,35 @@ ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=ann_i.stimula
 # - 50 f.e./generation
 # - use at least 5 runs for benchmarks
 # ++++++++++++++++++++++++++
-n_gen = 333
-ps = 15
-p_c = .9
+n_gen = 100
+ps = 50
+p_c = .7
 p_m = 0.5
-radius = .5
-pressure = .9
-p_migration = 0
+radius = .4
+pressure = .2
+
 ga1 = GeneticAlgorithm(problem_instance=ann_op_i, random_state=random_state,
-                       population_size=ps, selection=uls.parametrize_roulette_wheel_Wpressure_sharing_fitness(0.9),
-                       crossover=uls.geometric_semantic_crossover, p_c=p_c,
+                       population_size=ps, selection=uls.parametrize_roulette_wheel_Wpressure_sharing_fitness(pressure),
+                       crossover=uls.geometric_semantic_crossover, p_c = p_c,
                        mutation=uls.parametrized_ball_mutation(radius), p_m=p_m, pressure=pressure)
-
-ga2 = GeneticAlgorithm(problem_instance=ann_op_i, random_state=random_state,
-                       population_size=ps, selection=uls.parametrize_roulette_wheel_w_pressure(0.2),
-                       crossover=uls.geometric_semantic_crossover, p_c=p_c,
-                       mutation=uls.parametrized_ball_mutation(radius), p_m=p_m, pressure=pressure)
-
-ga3 = GeneticAlgorithm(problem_instance=ann_op_i, random_state=random_state,
-                       population_size=ps, selection=uls.parametrize_roulette_wheel_w_pressure(0.2),
-                       crossover=uls.geometric_semantic_crossover, p_c=p_c,
-                       mutation=uls.parametrized_ball_mutation(radius), p_m=p_m, pressure=pressure)
-
-ga4 = GeneticAlgorithm(problem_instance=ann_op_i, random_state=random_state,
-                       population_size=ps, selection=uls.parametrize_roulette_wheel_w_pressure(0.2),
-                       crossover=uls.geometric_semantic_crossover, p_c=p_c,
-                       mutation=uls.parametrized_ball_mutation(radius), p_m=p_m, pressure=pressure)
-
 
 islands = []
 ga1.initialize()
 islands.append(ga1)
 best_solution = ga1.best_solution
 for iteration in range(n_gen):
-    print("AQUI")
-    ga1.search(100, False, False)
-
+    ga1.search(iteration, False, False)
     for i in range(len(islands)):
         if best_solution.fitness < islands[i].best_solution.fitness:
             algorithm = islands[i]
             best_solution = islands[i].best_solution
 
+    print("\n")
     print(">>>>>>>>>>>>>>>>>INTERATION: ", iteration)
     print(">>>>>>>>>>>>>>>>>BEST_SOLUTION: ", best_solution.id)
-    print("G1: ", [ga1.best_solution.fitness, round(uls.calculate_media_solution(ga1.population), 2)], sep='\t')
+    print("G1: ", [ga1.best_solution.fitness, round(uls.calculate_media_solution(ga1.population),2), len(ga1.population)], sep='\t')
     print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(round(best_solution.fitness, 2)))
+    print("\n")
 
 best_solution.print_()
 

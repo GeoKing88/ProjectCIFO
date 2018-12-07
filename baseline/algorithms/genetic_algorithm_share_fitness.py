@@ -4,8 +4,7 @@ import utils as uls
 from random_search import RandomSearch
 from solutions.solution import Solution
 import pandas as pd
-import copy
-import math
+import seaborn as sns
 
 class GeneticAlgorithm(RandomSearch):
 
@@ -31,12 +30,13 @@ class GeneticAlgorithm(RandomSearch):
 
     def search(self, n_iterations=0, report=False, log=False):
         offsprings = []
-        candidates = uls.determine_the_total_fitness_seletion_phase_sharing_fitness(population=self.population,
-                                                                                    pressure=self.pressure)
-        while len(offsprings) < len(self.population):
+        candidates = uls.determine_the_total_fitness_seletion_phase_sharing_fitness(population1=self.population,
+                                                                                    pressure=self.pressure,
+                                                                                    iteration = n_iterations)
 
-            off1, off2 = p1, p2 = self.selection(candidates, self._random_state
-                                                 , self.pressure)
+
+        while len(offsprings) < len(self.population):
+            off1, off2 = p1, p2 = self.selection(candidates)
 
             if self._random_state.uniform() < self.p_c:
                 self._crossover(p1, p2)
@@ -61,6 +61,7 @@ class GeneticAlgorithm(RandomSearch):
 
         if report:
             self._verbose_reporter_inner(self.best_solution, n_iterations)
+
 
 
     def _crossover(self, p1, p2):
@@ -154,7 +155,6 @@ class GeneticAlgorithm(RandomSearch):
         selectTheBestOffsprings.rename(index=str, columns={0: "Offspring", 1: "Fitness"}, inplace=True)
         selectTheBestOffsprings.sort_values(ascending=False, inplace=True, by="Fitness")
         selectTheBestOffspringsList = selectTheBestOffsprings['Offspring'].tolist()
-        selectTheBestOffspringsList.append(self.best_solution)
         return selectTheBestOffspringsList
 
     # A Kind of Deterministic Crowding

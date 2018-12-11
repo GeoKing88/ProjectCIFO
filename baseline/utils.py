@@ -7,6 +7,7 @@ import math
 import copy
 import seaborn as sbn
 import matplotlib.pyplot as plt
+from solution import Solution
 
 def get_random_state(seed):
     return np.random.RandomState(seed)
@@ -45,9 +46,31 @@ def random_float_cbound_1D_array(dimensions, l_cbound, u_cbound, random_state):
 
 
 def parametrized_ball_mutation(radius):
-    def ball_mutation(point, random_state):
+    def ball_mutation(point, random_state, population):
         return np.array([random_state.uniform(low=coordinate - radius, high=coordinate + radius) for coordinate in point])
     return ball_mutation
+
+
+def parametrized_gaussian_member_mutation(radius):
+    def gaussian_member_mutation(point, random_state, population):
+        indexes = random_state.randint(low=0, high=len(point), size=int(len(point)*radius))
+        new_points = point.copy()
+
+        for index in indexes:
+
+            valor = random_state.normal(loc=0, scale=2)
+            if valor <-2:
+                new_points[index] = valor
+            if valor > 2:
+                new_points[index] = valor
+            else:
+                new_points[index] = valor
+
+        return new_points
+
+    return gaussian_member_mutation
+
+
 
 #Bad
 def parametrized_scramble_mutation(radius):
@@ -348,6 +371,7 @@ def parametrize_botzmann_selection(pressure):
     return botzmann_selection
 
 
+
 def select_the_solution_bolzmann(population, mean, random_state):
     max_bound, mean_temperature = calculate_botzmann_total(population, mean)
     random_number = random_state.uniform(0, max_bound)
@@ -506,3 +530,7 @@ def calculate_share_distance(individual, population, pressure):
                 total_share_distance = total_share_distance + (1-(distance_normalize/pressure))
                 total_raw = total_raw + distance
     return total_share_distance, total_raw
+
+
+def media_crossover_point(p1_r, p2_r, random_search):
+    return ((p1_r+ p2_r) /2), ((p1_r+ p2_r) /2)

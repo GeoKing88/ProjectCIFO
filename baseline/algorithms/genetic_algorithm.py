@@ -40,7 +40,6 @@ class GeneticAlgorithm(RandomSearch):
             if self._random_state.uniform() < self.p_c:
                 off1, off2 = self._crossover(p1, p2)
 
-
             if self._random_state.uniform() < self.p_m:
                 off1 = self._mutation(off1)
                 off2 = self._mutation(off2)
@@ -49,27 +48,18 @@ class GeneticAlgorithm(RandomSearch):
                 self.problem_instance.evaluate(off1)
                 self.problem_instance.evaluate(off2)
 
-            '''
-            if p1.fitness > off1.fitness:
-                offsprings.append(p1)
-            else:
-                offsprings.append(off1)
-            if p2.fitness > off2.fitness:
-                offsprings.append(p2)
-            else:
-                offsprings.append(off2)
-            '''
             offsprings.append(off1)
             offsprings.append(off2)
 
         while len(offsprings) > len(self.population):
             offsprings.pop()
+
         elite_offspring = self._get_elite(offsprings)
 
         newPopulation = self.sort_populations(offsprings)
         elite = self._get_best(elite, elite_offspring)
         self.best_solution = elite
-        self.population = np.asarray(newPopulation)
+        self.population = np.array(newPopulation)
 
 
 
@@ -81,7 +71,7 @@ class GeneticAlgorithm(RandomSearch):
         return off1, off2
 
     def _mutation(self, individual):
-        mutant = self.mutation(individual.representation, self._random_state)
+        mutant = self.mutation(individual.representation, self._random_state, self.population)
         mutant = Solution(mutant)
         return mutant
 
@@ -101,7 +91,6 @@ class GeneticAlgorithm(RandomSearch):
 
     def get_all_fitness(self):
         fitness_list = []
-
         for i in range(len(self.population)):
             fitness_list.append(self.population[i].fitness)
         return np.asarray(fitness_list)

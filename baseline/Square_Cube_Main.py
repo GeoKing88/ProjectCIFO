@@ -21,6 +21,7 @@ import math as math
 import pandas as pd
 import openpyxl
 from openpyxl.utils import get_column_letter
+import copy
 
 # setup logger
 file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "LogFiles/" + (str(datetime.datetime.now().date()) + "-" + str(datetime.datetime.now().hour) + \
@@ -98,27 +99,27 @@ ann_op_i = ANNOP(search_space=(-2, 2, n_weights), fitness_function=ann_i.stimula
 # - use at least 5 runs for benchmarks
 #++++++++++++++++++++++++++
 n_gen = 100
-ps = 10
-p_c = .8
+ps = 12
+p_c = 1
 p_m = .8
 radius = .002
 pressure = .5
 
-ga1 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                          uls.cicle_crossover, p_c, uls.parametrized_gaussian_member_mutation(radius)
+ga1 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_roulette_wheel_w_pressure(pressure),
+                          uls.cicle_crossover2, p_c, uls.parametrized_gaussian_member_mutation(radius)
                                                                                         , p_m, pressure)
 
-ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                          uls.cicle_crossover, p_c, uls.parametrized_gaussian_member_mutation(radius)
+ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrize_roulette_wheel_w_pressure(pressure),
+                          uls.cicle_crossover2, p_c, uls.parametrized_gaussian_member_mutation(radius)
                                                                                         , p_m, pressure)
 
 ga3 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                          uls.cicle_crossover, p_c, uls.parametrized_gaussian_member_mutation(radius)
-                                                                                        , p_m, pressure)
+                          uls.cicle_crossover2, 0.8, uls.parametrized_gaussian_member_mutation(radius)
+                                                                                        , 1, pressure)
 
 ga4 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                          uls.cicle_crossover, p_c, uls.parametrized_gaussian_member_mutation(radius)
-                                                                                        , p_m, pressure)
+                          uls.cicle_crossover2, 0.8, uls.parametrized_gaussian_member_mutation(radius)
+                                                                                        , 1, pressure)
 
 ga5 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
                           uls.cicle_crossover, p_c, uls.parametrized_gaussian_member_mutation(radius)
@@ -133,8 +134,6 @@ ga3.initialize()
 islands.append(ga3)
 ga4.initialize()
 islands.append(ga4)
-ga5.initialize()
-islands.append(ga5)
 best_solution = ga1.best_solution
 
 
@@ -147,6 +146,17 @@ for iteration in range(100):
             algorithm = islands[i]
             best_solution = islands[i].best_solution
 
+        if iteration % 20 ==0 and iteration != 0:
+            migration1 = copy.deepcopy(ga1.population[:3])
+            migration2 = copy.deepcopy(ga2.population[:3])
+            migration3 = copy.deepcopy(ga3.population[:3])
+            migration4 = copy.deepcopy(ga4.population[:3])
+
+            ga1.population[:3] = migration2
+            ga2.population[:3] = migration3
+            ga3.population[:3] = migration4
+            ga4.population[:3] = migration1
+
     print('\n')
     print(">>>>>>>>>>>>>>>>>INTERATION: ", iteration)
     print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(ga1.best_solution.fitness))
@@ -157,8 +167,6 @@ for iteration in range(100):
     print(">>>>>>>>>>>>>>>>>G3 - MEAN: ", uls.calculate_media_solution(ga3.population))
     print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(ga4.best_solution.fitness))
     print(">>>>>>>>>>>>>>>>>G4 - MEAN: ", uls.calculate_media_solution(ga4.population))
-    print(">>>>>>>>>>>>>>>>>FITNESS>>>>>>>>>>>>>>>>>>>>: ", str(ga5.best_solution.fitness))
-    print(">>>>>>>>>>>>>>>>>G5 - MEAN: ", uls.calculate_media_solution(ga5.population))
 
 print("Training fitness of the best solution: %.2f" % best_solution.fitness)
 print("Validation fitness of the best solution: %.2f" % best_solution.validation_fitness)
@@ -199,134 +207,3 @@ if make_plots:
         sub.set_title('y^: %i, y: %i' % (y_pred[i], y_test[i]))
     f.suptitle('Testing classifier on unseen data')
     plt.show()
-
-
-'''
-ga = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                          uls.subtoru_exchange_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
-
-
-ga2 = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure=pressure),
-                       uls.two_point_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
-
-ga.initialize()
-ga.search(n_gen, True, True)
-teste1 = ga.get_best_solution()
-
-
-
-ga.best_solution.print_()
-
-
-print("Training fitness of the best solution: %.2f" % ga.best_solution.fitness)
-print("Validation fitness of the best solution: %.2f" % ga.best_solution.validation_fitness)
-
-
-#++++++++++++++++++++++++++
-# TEST
-#++++++++++++++++++++++++++
-ann_i._set_weights(ga.best_solution.representation)
-y_pred = ann_i.stimulate_with(X_test, False)
-print("Unseen Accuracy of the best solution: %.2f" % accuracy_score(y_test, y_pred))
-
-if make_plots:
-    n_images = 25
-    images = X_test[0:n_images].reshape((n_images, 8, 8))
-    f = plt.figure(figsize=(10, 10))
-    for i in range(n_images):
-        sub = f.add_subplot(5, 5, i + 1)
-        sub.imshow(images[i], cmap=plt.get_cmap("Greens") if y_pred[i] == y_test[i] else plt.get_cmap("Reds"))
-        plt.xticks([])
-        plt.yticks([])
-        sub.set_title('y^: %i, y: %i' % (y_pred[i], y_test[i]))
-    f.suptitle('Testing classifier on unseen data')
-    plt.show()
-
-ann_i._set_weights(ga.best_solution.representation)
-y_pred = ann_i.stimulate_with(X_test, False)
-print("Unseen Accuracy of the best solution: %.2f" % accuracy_score(y_test, y_pred))
-if make_plots:
-    n_images = 25
-    images = X_test[0:n_images].reshape((n_images, 8, 8))
-    f = plt.figure(figsize=(10, 10))
-    for i in range(n_images):
-        sub = f.add_subplot(5, 5, i + 1)
-        sub.imshow(images[i], cmap=plt.get_cmap("Greens") if y_pred[i] == y_test[i] else plt.get_cmap("Reds"))
-        plt.xticks([])
-        plt.yticks([])
-        sub.set_title('y^: %i, y: %i' % (y_pred[i], y_test[i]))
-    f.suptitle('Testing classifier on unseen data')
-    plt.show()
-
-import numpy as np
-import matplotlib.pyplot as plt
-x = np.asarray(ga.list_iteration)
-y = np.asarray([x*100 for x in ga.get_best_solution()])
-plt.scatter(x, y)
-plt.xticks(x)
-plt.show()
-
-
-ga = GeneticAlgorithm(ann_op_i, random_state, ps, uls.parametrized_tournament_selection(pressure),
-                          uls.uniform_points_crossover, p_c, uls.parametrized_ball_mutation(radius), p_m)
-
-
-
-ga.initialize()
-ga.search(n_gen, True, True)
-teste2 = ga.get_best_solution()
-
-
-
-ga.best_solution.print_()
-
-
-print("Training fitness of the best solution: %.2f" % ga.best_solution.fitness)
-print("Validation fitness of the best solution: %.2f" % ga.best_solution.validation_fitness)
-
-
-#++++++++++++++++++++++++++
-# TEST
-#++++++++++++++++++++++++++
-ann_i._set_weights(ga.best_solution.representation)
-y_pred = ann_i.stimulate_with(X_test, False)
-print("Unseen Accuracy of the best solution: %.2f" % accuracy_score(y_test, y_pred))
-
-if make_plots:
-    n_images = 25
-    images = X_test[0:n_images].reshape((n_images, 8, 8))
-    f = plt.figure(figsize=(10, 10))
-    for i in range(n_images):
-        sub = f.add_subplot(5, 5, i + 1)
-        sub.imshow(images[i], cmap=plt.get_cmap("Greens") if y_pred[i] == y_test[i] else plt.get_cmap("Reds"))
-        plt.xticks([])
-        plt.yticks([])
-        sub.set_title('y^: %i, y: %i' % (y_pred[i], y_test[i]))
-    f.suptitle('Testing classifier on unseen data')
-    plt.show()
-
-ann_i._set_weights(ga.best_solution.representation)
-y_pred = ann_i.stimulate_with(X_test, False)
-print("Unseen Accuracy of the best solution: %.2f" % accuracy_score(y_test, y_pred))
-if make_plots:
-    n_images = 25
-    images = X_test[0:n_images].reshape((n_images, 8, 8))
-    f = plt.figure(figsize=(10, 10))
-    for i in range(n_images):
-        sub = f.add_subplot(5, 5, i + 1)
-        sub.imshow(images[i], cmap=plt.get_cmap("Greens") if y_pred[i] == y_test[i] else plt.get_cmap("Reds"))
-        plt.xticks([])
-        plt.yticks([])
-        sub.set_title('y^: %i, y: %i' % (y_pred[i], y_test[i]))
-    f.suptitle('Testing classifier on unseen data')
-    plt.show()
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-x = np.asarray(ga.list_iteration)
-y = np.asarray([x*100 for x in ga.get_best_solution()])
-plt.scatter(x, y)
-plt.xticks(x)
-plt.show()
-'''

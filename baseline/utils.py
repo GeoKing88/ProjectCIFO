@@ -8,6 +8,10 @@ import copy
 import seaborn as sbn
 import matplotlib.pyplot as plt
 from solution import Solution
+from random import shuffle
+
+
+
 
 def get_random_state(seed):
     return np.random.RandomState(seed)
@@ -53,22 +57,37 @@ def parametrized_ball_mutation(radius):
 
 def parametrized_gaussian_member_mutation(radius):
     def gaussian_member_mutation(point, random_state, population):
-        indexes = random_state.randint(low=0, high=len(point), size=int(len(point)*radius))
+        index = random_state.randint(low=0, high=len(point), size=int(len(point)*radius))
         new_points = point.copy()
-
-        for index in indexes:
-
-            valor = random_state.normal(loc=0, scale=2)
-            if valor <-2:
-                new_points[index] = valor
-            if valor > 2:
-                new_points[index] = valor
-            else:
-                new_points[index] = valor
-
+        for i in index:
+            valor = random_state.normal(loc=0, scale=5)
+            #print(valor)
+            new_points[i] = valor
         return new_points
-
     return gaussian_member_mutation
+
+
+def parametrized_logistic_distribution(radius):
+    def logistic_distribution(point, random_state, population):
+        index = random_state.randint(low=0, high=len(point), size=int(len(point) * radius))
+        new_points = point.copy()
+        for i in index:
+            valor = random_state.logistic(loc=0, scale=10)
+            #print(valor)
+            new_points[i] = valor
+        return new_points
+    return logistic_distribution
+
+
+def parametrized_laplace_mutation(radius):
+    def laplace_member_mutation(point, random_state, population):
+        index = random_state.randint(low=0, high=len(point), size=int(len(point)*radius))
+        new_points = point.copy()
+        for i in index:
+            valor = random_state.laplace(loc=0, scale=2)
+            new_points[i] = valor
+        return new_points
+    return laplace_member_mutation
 
 
 
@@ -107,6 +126,7 @@ def one_point_crossover(p1_r, p2_r, random_state):
     off2_r = np.concatenate((p2_r[0:point], p1_r[point:len_]))
     return off1_r, off2_r
 
+
 # Is kind of good. Maybe we need more points
 def two_point_crossover(p1_r, p2_r, random_state):
     len_ = len(p1_r)
@@ -135,6 +155,43 @@ def subtoru_exchange_crossover(p1_r, p2_r, random_state):
     off1_r = np.concatenate((p1_r[0:point1], p2_r[point3:point3+len_2], p1_r[point2: len_]))
     off2_r = np.concatenate((p2_r[0:point3], p1_r[point1:point2], p2_r[point3+len_2: len_]))
     return off1_r, off2_r
+
+
+def partially_matched_crossover(p1_r, p2_r, random_state, pressure=1):
+    point1 = random_state.randint(len(p1_r)-1)
+    point2 = random_state.randint(point1+1, len(p1_r))
+    index1 = []
+    for i in range(len(p1_r)):
+        index1.append(i)
+    index2 = copy.deepcopy(index1)
+    shuffle(index1)
+    shuffle(index2)
+    off1_r, off2_r = p1_r, p2_r
+
+    for i in range(point1, point2+1):
+        off1_r[i] = p2_r[index2[i]]
+        off2_r[i] = p1_r[index1[i]]
+
+        for j in range(len(p1_r)):
+            if off1_r[j] == index2[i]:
+                off1_r[j] = p2_r[i]
+            if off2_r[j] == index1[i]:
+                off2_r[j] = p1_r[i]
+
+    pandas_to_sort_1 = pd.DataFrame(np.asanyarray(index1))
+    pandas_to_sort_1.rename(index=str, columns={0: "Index"}, inplace=True)
+    pandas_to_sort_1['Off1'] = off1_r
+    pandas_to_sort_1.sort_values(ascending=False, inplace=True, by="Index")
+    pandas_to_sort_1_list = pandas_to_sort_1['Off1'].tolist()
+
+    pandas_to_sort_2 = pd.DataFrame(np.asanyarray(index2))
+    pandas_to_sort_2.rename(index = str, columns={0: "Index"}, inplace=True)
+    pandas_to_sort_2['Off2'] = off2_r
+    pandas_to_sort_2.sort_values(ascending=False, inplace=True, by="Index")
+    pandas_to_sort_2_list = pandas_to_sort_2['Off2'].tolist()
+    return pandas_to_sort_1_list, pandas_to_sort_2_list
+
+
 
 #Dont use this
 def order_crossover_random_genes(p1_r, p2_r, random_state, pressure=.05):
@@ -304,20 +361,6 @@ def calculate_min_solution(population):
 def calculate_media_solution(population):
     return calculate_sum_solution(population)/len(population)
 
-
-#Bad
-def parametrize_uniform_mutation(radius):
-    def uniform_points_mutation(solution, random_state):
-       len_ = len(solution)
-       mutant=solution
-       for iteration in range(len_):
-           random = random_state.randint(0, 2)
-           if random==0:
-               mutant[iteration] = mutant[iteration] + radius
-           else:
-               mutant[iteration] = mutant[iteration]-radius
-       return mutant
-    return uniform_points_mutation
 
 #Bad. But we can use to generate the mutant ugly guy
 def parametrize_inverse_mutation(radius):
@@ -533,4 +576,99 @@ def calculate_share_distance(individual, population, pressure):
 
 
 def media_crossover_point(p1_r, p2_r, random_search):
-    return ((p1_r+ p2_r) /2), ((p1_r+ p2_r) /2)
+    off1, off2 = p1_r, p2_r
+
+    for i in range(len(p1_r)):
+        off1[i] = (p1_r[i]+p2_r[i])/2
+    off2 = copy.deepcopy(off1)
+
+    return off2, off1
+
+
+def cicle_crossover(p1_r, p2_r, random_search):
+    index1 = []
+    for i in range(len(p1_r)):
+        index1.append(i)
+
+    index2 = copy.deepcopy(index1)
+    shuffle(index1)
+    shuffle(index2)
+
+    another_list = []
+    off1 = copy.deepcopy(p2_r)
+    off2 = copy.deepcopy(p1_r)
+    i = 0
+    while i < len(off1):
+        off1[i] = p1_r[i]
+        i = index2[i]
+        another_list.append(i)
+        for j in range(len(another_list)):
+            if another_list[j] is not None and another_list[j] == i:
+                i = len(off1)
+                break
+        i = i+1
+    another_list = []
+    i = 0
+    while i < len(off2):
+        off2[i] = p2_r[i]
+        i = index1[i]
+        another_list.append(i)
+        for j in range(len(another_list)):
+            if another_list[j] is not None and another_list[j] == i:
+                i = len(off1)
+                break
+        i = i+1
+    return off1, off2
+
+def cicle_crossover2(p1_r, p2_r, random_search):
+    index1 = []
+    for i in range(len(p1_r)):
+        index1.append(i)
+
+    index2 = copy.deepcopy(index1)
+    shuffle(index1)
+    shuffle(index2)
+
+    another_list = []
+    off1 = copy.deepcopy(p2_r)
+    off2 = copy.deepcopy(p1_r)
+    i = 0
+    while i < len(off1):
+        off1[i] = p1_r[i]
+        i = index2[i]
+        another_list.append(i)
+        for j in range(len(another_list)):
+            if another_list[j] is not None and another_list[j] == i:
+                i = len(off1)
+                break
+        i = i+1
+    another_list = []
+    i = 0
+    while i < len(off2):
+        off2[i] = p2_r[i]
+        i = index1[i]
+        another_list.append(i)
+        for j in range(len(another_list)):
+            if another_list[j] is not None and another_list[j] == i:
+                i = len(off1)
+                break
+        i = i+1
+
+    pandas_to_sort_1 = pd.DataFrame(np.asanyarray(index1))
+    pandas_to_sort_1.rename(index=str, columns={0: "Index"}, inplace=True)
+    pandas_to_sort_1['Off1'] = off1
+    pandas_to_sort_1.sort_values(ascending=False, inplace=True, by="Index")
+    pandas_to_sort_1_list = pandas_to_sort_1['Off1'].tolist()
+
+    pandas_to_sort_2 = pd.DataFrame(np.asanyarray(index2))
+    pandas_to_sort_2.rename(index = str, columns={0: "Index"}, inplace=True)
+    pandas_to_sort_2['Off2'] = off2
+    pandas_to_sort_2.sort_values(ascending=False, inplace=True, by="Index")
+    pandas_to_sort_2_list = pandas_to_sort_2['Off2'].tolist()
+
+
+
+
+    return pandas_to_sort_1_list, pandas_to_sort_2_list
+
+

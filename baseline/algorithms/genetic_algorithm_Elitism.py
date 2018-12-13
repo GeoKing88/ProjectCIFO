@@ -23,7 +23,6 @@ class GeneticAlgorithm(RandomSearch):
         self.presure = presure
         self.reproduttive_guys = []
         self.repetition = 0
-        self.fitness_sharing = None
 
     def initialize(self):
         self.population = self._generate_random_valid_solutions()
@@ -60,8 +59,6 @@ class GeneticAlgorithm(RandomSearch):
         elite = self._get_best(elite, elite_offspring)
         self.best_solution = elite
         self.population = np.array(self.create_elites(offsprings))
-
-
 
 
     def _crossover(self, p1, p2):
@@ -112,6 +109,12 @@ class GeneticAlgorithm(RandomSearch):
         return sum/(len(self.reproduttive_guys))
 
 
+    def determinine_pressure(self):
+        print("Média: ", self._determine_average_reproductive_guys())
+        print("Denominador: ", uls.calculate_media_solution(self.population))
+        return (self.presure*self._determine_average_reproductive_guys())/(uls.calculate_media_solution(self.population))
+
+
     def calculate_probability_of_crossover(self, p1, p2, crossover_pressure):
 
         if p1.fitness < p2.fitness:
@@ -124,15 +127,21 @@ class GeneticAlgorithm(RandomSearch):
             return crossover_pressure*(best_fitness - parent_fitness)/(best_fitness - avg)
         return self.p_c
 
+    def distance_scheme(self, individual1, individual2):
+        distance_map = []
+        for i in range(len(individual1.representation)):
+            distance_map.append(abs(individual1.representation[i] - individual2.representation[i]))
+        distance = 0
+        for i in range(len(distance_map)):
+            distance = distance + distance_map[i]
+        return distance
+
 
     def sort_populations(self, population):
         selectTheBestOffsprings = pd.DataFrame(np.asanyarray([[offspring, offspring.fitness] for offspring
                                                               in population]))
         selectTheBestOffsprings.rename(index=str, columns={0: "Offspring", 1: "Fitness"}, inplace=True)
         selectTheBestOffsprings.sort_values(ascending=False, inplace=True, by="Fitness")
-
-        selectTheBestOffsprings['Fitness Sharing'] =
-
         selectTheBestOffspringsList = selectTheBestOffsprings['Offspring'].tolist()
         return selectTheBestOffspringsList
 
@@ -142,25 +151,8 @@ class GeneticAlgorithm(RandomSearch):
         offsprings = self.sort_populations(offsprings)
         return population[:1] + offsprings[:self.population_size-1]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def commit_genocid(self, population):
+        martials = self._generate_random_valid_solutions().tolist()[:12]
+        population = self.sort_populations(self.population)
+        return np.asanyarray(martials[:13] + population[:13])
 
